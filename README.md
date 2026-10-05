@@ -9,7 +9,7 @@ RuneLite plugin that controls when the **Item Stats** hover tooltips (equipment 
     - **Marker box** (default) shows a small `...` box where the stats would be. 
     - **Asterisk** adds `*` after the item name in the Mouse Tooltips box (if that plugin is enabled). 
     - **None** shows no indication that the item has hidden stats.
-- **Only show item stats on hold (optional):** hides every item's tooltip until you hold the key. Defaults to Ctrl, can be changed in options.
+- **Only show item stats on hold (optional):** hides every item's stats tooltip until you hold the key. Defaults to Ctrl, can be changed in options.
 - **Show hidden item stats on hold:** while the key is held, hidden items show their stats too. Turn it off to keep hidden items hidden even while holding the key.
 
 Other plugins' tooltips (such as item prices) are left alone.
