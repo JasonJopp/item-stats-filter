@@ -122,10 +122,13 @@ public class ItemStatsFilterPlugin extends Plugin
 	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
-		if (hotkeyListener != null)
+		synchronized (this)
 		{
-			keyManager.unregisterKeyListener(hotkeyListener);
-			hotkeyListener = null;
+			if (hotkeyListener != null)
+			{
+				keyManager.unregisterKeyListener(hotkeyListener);
+				hotkeyListener = null;
+			}
 		}
 		hotkeyHeld = false;
 	}
@@ -141,9 +144,18 @@ public class ItemStatsFilterPlugin extends Plugin
 		switch (event.getKey())
 		{
 			case ItemStatsFilterConfig.HIDDEN_ITEMS:
-				clientThread.invoke(this::updateHiddenPatterns);
+				clientThread.invoke(() ->
+				{
+					updateHiddenPatterns();
+					// The list going empty or non-empty can change whether the key does anything
+					if (wantsHotkey() != (hotkeyListener != null))
+					{
+						updateHotkeyListener();
+					}
+				});
 				break;
 			case ItemStatsFilterConfig.REQUIRE_HOTKEY:
+			case ItemStatsFilterConfig.SHOW_HIDDEN_ON_HOLD:
 			case ItemStatsFilterConfig.HOTKEY:
 				updateHotkeyListener();
 				break;
@@ -199,18 +211,47 @@ public class ItemStatsFilterPlugin extends Plugin
 	 */
 	boolean shouldHideItemStats()
 	{
-		if (config.requireHotkey() && !hotkeyHeld)
+		final boolean held = hotkeyHeld;
+		if (config.requireHotkey() && !held)
 		{
 			return true;
 		}
 
-		if (hiddenPatterns.isEmpty())
+		if (hiddenPatterns.isEmpty() || (held && config.showHiddenOnHold()))
 		{
 			return false;
 		}
 
 		final int itemId = getHoveredItemId();
 		return itemId > 0 && isHidden(itemId);
+	}
+
+	HiddenStatsIndicator getIndicator()
+	{
+		return config.hiddenIndicator();
+	}
+
+	/**
+	 * The text the Mouse Tooltips plugin shows for the hovered menu entry, built the same
+	 * way it builds it, or null if there is nothing to show.
+	 */
+	String getMouseTooltipText()
+	{
+		final MenuEntry[] menu = client.getMenu().getMenuEntries();
+		if (menu.length == 0)
+		{
+			return null;
+		}
+
+		final MenuEntry entry = menu[menu.length - 1];
+		final String option = entry.getOption();
+		final String target = entry.getTarget();
+		if (option == null || option.isEmpty())
+		{
+			return null;
+		}
+
+		return target == null || target.isEmpty() ? option : option + " " + target;
 	}
 
 	/**
@@ -327,7 +368,15 @@ public class ItemStatsFilterPlugin extends Plugin
 		hiddenCache.clear();
 	}
 
-	private void updateHotkeyListener()
+	/**
+	 * Whether holding the key currently does anything.
+	 */
+	private boolean wantsHotkey()
+	{
+		return config.requireHotkey() || (config.showHiddenOnHold() && !hiddenPatterns.isEmpty());
+	}
+
+	private synchronized void updateHotkeyListener()
 	{
 		if (hotkeyListener != null)
 		{
@@ -336,8 +385,8 @@ public class ItemStatsFilterPlugin extends Plugin
 		}
 		hotkeyHeld = false;
 
-		// Only listen while the feature is on, so a bound key isn't swallowed otherwise
-		if (config.requireHotkey())
+		// Only listen while the key does something, so a bound key isn't swallowed otherwise
+		if (wantsHotkey())
 		{
 			hotkeyListener = new HotkeyListener(config::hotkey)
 			{

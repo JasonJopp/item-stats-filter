@@ -35,12 +35,14 @@ public interface ItemStatsFilterConfig extends Config
 {
 	String GROUP = "itemstatsfilter";
 	String HIDDEN_ITEMS = "hiddenItems";
+	String INDICATOR = "hiddenIndicator";
 	String REQUIRE_HOTKEY = "requireHotkey";
+	String SHOW_HIDDEN_ON_HOLD = "showHiddenOnHold";
 	String HOTKEY = "hotkey";
 
 	@ConfigSection(
 		name = "Hold to show",
-		description = "Only show stat tooltips while a key is held",
+		description = "Use a held key to show item stats, including stats of hidden items",
 		position = 10
 	)
 	String hotkeySection = "hotkeySection";
@@ -68,8 +70,19 @@ public interface ItemStatsFilterConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = INDICATOR,
+		name = "Hidden-stats indicator",
+		description = "How to mark an item whose stats are hidden. Asterisk adds * after the item name in the Mouse Tooltips box (that plugin must be on).",
+		position = 2
+	)
+	default HiddenStatsIndicator hiddenIndicator()
+	{
+		return HiddenStatsIndicator.MARKER_BOX;
+	}
+
+	@ConfigItem(
 		keyName = REQUIRE_HOTKEY,
-		name = "Only show while held",
+		name = "Only show item stats on hold",
 		description = "Only show stat tooltips while the key below is held down",
 		position = 11,
 		section = hotkeySection
@@ -80,10 +93,22 @@ public interface ItemStatsFilterConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = SHOW_HIDDEN_ON_HOLD,
+		name = "Show hidden item stats on hold",
+		description = "While the key below is held, also show stats for items on the hidden list",
+		position = 12,
+		section = hotkeySection
+	)
+	default boolean showHiddenOnHold()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = HOTKEY,
 		name = "Key",
 		description = "Key to hold. Ctrl or Alt work best: Shift also turns left-click into Drop if shift-click drop is on, and a non-modifier key can't be typed while it's bound.",
-		position = 12,
+		position = 13,
 		section = hotkeySection
 	)
 	default Keybind hotkey()
